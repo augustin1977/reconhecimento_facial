@@ -124,7 +124,6 @@ def le_aprendizado(arquivo="treinamento.dat"):
     # print(encoding)
     return names, encoding
 
-
 def carrega_imagens_e_aprende(endereco):
     known_face_names = []
     known_face_encodings = []
