@@ -224,7 +224,14 @@ def reconhece_imagem(imagem, max_erro, known_face_names, known_face_encodings):
 def menu():
     os.chdir(enderecopadrao)
     opcao = 0
+    passou = False
     while not (0 < opcao < 6):
+        if passou:
+            print("------------------------")
+            print("Digite uma opção válida")
+            print("------------------------\n")
+
+        passou = True
         print("------------------------")
         print("----------MENU----------")
         print("1-Carregar Modelo")
@@ -239,6 +246,7 @@ def menu():
         else:
             opcao = 0
     return opcao
+
 
 
 def main():
