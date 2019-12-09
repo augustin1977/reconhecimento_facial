@@ -288,3 +288,5 @@ def main():
 
 # chama main()
 main()
+
+""" Chama função main()"""
