@@ -10,7 +10,7 @@ enderecopadrao = r"D:\Eric\Documentos\Unesc\Iniciação Cientifica - Reconhecime
 resolucaoPadrao = (640, 360)  # para a webcam Razer
 # resolucaoPadrao=(640,480) # para a webcam embutida
 cameraEscolida = 0
-espera = 1.5
+espera = 1
 
 seletividade = 0.48
 scale = 1.3
@@ -224,7 +224,14 @@ def reconhece_imagem(imagem, max_erro, known_face_names, known_face_encodings):
 def menu():
     os.chdir(enderecopadrao)
     opcao = 0
+    passou = False
     while not (0 < opcao < 6):
+        if passou:
+            print("------------------------")
+            print("Digite uma opção válida")
+            print("------------------------\n")
+
+        passou = True
         print("------------------------")
         print("----------MENU----------")
         print("1-Carregar Modelo")
@@ -275,7 +282,7 @@ def main():
                 time.sleep(espera)
                 print()
             except:
-                print("erro")
+                print("Erro Geral!")
             print("Voltando ao menu....")
 
 
