@@ -248,6 +248,7 @@ def menu():
     return opcao
 
 
+
 def main():
     known_face_names = []
     known_face_encodings = []
