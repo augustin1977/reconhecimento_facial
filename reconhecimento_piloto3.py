@@ -7,8 +7,8 @@ import numpy as np
 
 enderecopadrao = r"D:\Eric\Documentos\Unesc\Iniciação Cientifica - Reconhecimento Facial\Piloto"
 # definição de variaveis globais
-resolucaoPadrao = (640, 360)  # para a webcam Razer
-# resolucaoPadrao=(640,480) # para a webcam embutida
+# resolucaoPadrao = (640, 360)  # para a webcam Razer
+resolucaoPadrao = (640, 480)  # para a webcam embutida
 cameraEscolida = 0
 espera = 1
 
@@ -18,6 +18,9 @@ numeroarquivos = 8
 
 
 def define_recorte_figura(face_locations):
+    # esta função recebe um vetor con as coordenadas de um retangulo onde pode haver um rosto
+    # e retorna a coordenada do maior rosto para ser recortado durante o cadastramento ja considerando o fator scale
+
     print(face_locations)
     maior_area = 0
     indice = 0
@@ -51,6 +54,9 @@ def define_recorte_figura(face_locations):
 
 
 def inclui_registro(endereco):
+    # função que recebe o endereço da imagem onde as imagens devem ser gravadas captura a imagem,
+    # captura a imagem da webcam selecionada e recorta somente o rosto que ira ser gravado
+    # para futuro treinamento
     pastaCriada = False
     video_capture = cv2.VideoCapture(cameraEscolida)  # seleciona a webcam escolhida
     ret, capture_picture = video_capture.read()
@@ -84,7 +90,7 @@ def inclui_registro(endereco):
             cv2.imshow("teste", small_frame)
             k = cv2.waitKey(1)
         nomearquivo = endereco + "\\" + str(numero) + ".jpg"
-        print(nomearquivo)
+        print("Gravando arquivo", nomearquivo)
         os.chdir(endereco)
         cv2.imwrite(str(numero) + ".jpg", capture_picture)  # escreve o arquivo no disco
         os.chdir(enderecopadrao)
@@ -95,6 +101,8 @@ def inclui_registro(endereco):
 
 
 def grava_aprendizado(names, encoding, arquivo="treinamento.dat"):
+    # função recebe a matriz de nomes, a codificação da Ai e o nome do arquivo de treinamento e
+    # faz a gravação  do apredizado feito num arquivo texto do tipo CSV para poder ser recuperado posteriomente
     arquivo = open(arquivo, 'w', encoding="utf8")
     string = ""
     for name in names:
@@ -111,6 +119,7 @@ def grava_aprendizado(names, encoding, arquivo="treinamento.dat"):
 
 
 def le_aprendizado(arquivo="treinamento.dat"):
+    # recebe o arquivo a ser lido do tipo CSV e retorna o vetor de nomes e a matriz de treinamente realizado
     arquivo = open(arquivo, 'r', encoding="utf8")
     string = arquivo.readline()
     names = string[:-1].split(";")
@@ -125,6 +134,8 @@ def le_aprendizado(arquivo="treinamento.dat"):
     return names, encoding
 
 def carrega_imagens_e_aprende(endereco):
+    # recebe o endereço onde as fotos estão gravadas e realiza o treinamento
+    # e retorna o vetor de nomes e a matriz de do treinamento realizado
     known_face_names = []
     known_face_encodings = []
     total = 0
@@ -164,6 +175,8 @@ def carrega_imagens_e_aprende(endereco):
 
 
 def calcula_confianca(face_distances, matches, known_face_names):
+    # função que transforma a distancia euclidiana entre as imagens comparadas e retorna um fator em 0 e 100%
+    # corresopondente ao valor percentual de confiança
     repeticoes = 0
     encontrados = []
     erro = 1
@@ -178,15 +191,33 @@ def calcula_confianca(face_distances, matches, known_face_names):
     else:
         status = False
         erro = 1
-    print(repeticoes)
     return status, (1 - erro) * 100
 
 
+def escolhe_maior_retangulo(retangulos):
+    # função recebe um lista de retangulos e retorna o indice do maior
+    # pois em tese trata-se do rosto mais proximo da camera
+    max_area = 0
+    indice = 0
+    i = 0
+    for x1, y1, x2, y2 in retangulos:
+        area = (x2 - x1) * (y2 - y1)
+        if (area > max_area):
+            max_area = area
+            indice = i
+        i += 1
+    return indice
+
+
+
 def reconhece_imagem(imagem, max_erro, known_face_names, known_face_encodings):
+    # função que recebe a imagem capturada da webcam, o erro maximo admissivel, o vetor de nomes e a matriz de aprendizado
+    # retorna  imagem com um retangulo sobre o rosto com o nome do mesmo caso seja possivel identificar e o status do reconhecimento
     small_frame = cv2.resize(imagem, resolucaoPadrao)
     # rgb_small_frame = small_frame[:, :, ::-1]
 
     face_locations = face_recognition.face_locations(small_frame)
+    maior_retangulo = escolhe_maior_retangulo(face_locations)
     face_encodings = face_recognition.face_encodings(small_frame, face_locations)
     face_names = []
     for face_encoding in face_encodings:
@@ -206,11 +237,15 @@ def reconhece_imagem(imagem, max_erro, known_face_names, known_face_encodings):
                                                                     matches[best_match_index],
                                                                     best_match_index, name, confidence))
 
-        face_names.append(name)
+        face_names.append(name), status
     # Display the results
+    i =0
     for (top, right, bottom, left), name in zip(face_locations, face_names):
         # Draw a box around the face
-        cv2.rectangle(small_frame, (right, top), (left, bottom), (0, 0, 255), 1)
+        if (i == maior_retangulo and confidence > 0):
+            cv2.rectangle(small_frame, (right, top), (left, bottom), (0, 255, 255), 1)
+        else:
+            cv2.rectangle(small_frame, (right, top), (left, bottom), (0, 0, 255), 1)
 
         # Draw a label with a name below the face
         cv2.rectangle(small_frame, (left, bottom - 20), (right, bottom), (0, 128, 255), cv2.FILLED)
@@ -218,10 +253,12 @@ def reconhece_imagem(imagem, max_erro, known_face_names, known_face_encodings):
         cv2.putText(small_frame, name, (left + 6, bottom - 6), font, 0.5, (255, 255, 255), 1)
         # rgb_frame = small_frame[:, :, ::-1]
         # cv2.imshow("camera", rgb_frame)
+        i +=1
     return small_frame
 
 
 def menu():
+    # função para mostrar o menu
     os.chdir(enderecopadrao)
     opcao = 0
     passou = False
@@ -250,6 +287,7 @@ def menu():
 
 
 def main():
+    # função principal
     known_face_names = []
     known_face_encodings = []
     opcao = 0
@@ -287,7 +325,6 @@ def main():
             print("Voltando ao menu....")
 
 
-# chama main()
+# chama função principal main()
 main()
 
-""" Chama função main()"""
